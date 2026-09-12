@@ -3,9 +3,7 @@ import json
 import time
 
 def rodar_experimento(intervalo_checkpoint, total_operacoes=100000, operacao_falha=73821, pasta_checkpoints="checkpoints"):
-    """
-    Executa a simulação de rollback para um intervalo de checkpoint específico.
-    """
+    # simulacao de rollbacks
     if not os.path.exists(pasta_checkpoints):
         os.makedirs(pasta_checkpoints)
 
@@ -13,9 +11,7 @@ def rodar_experimento(intervalo_checkpoint, total_operacoes=100000, operacao_fal
     print(f" Iniciando Experimento - Intervalo: {intervalo_checkpoint} ")
     print(f"==================================================")
 
-    # ----------------------------------------------------
-    # 1. Execução Inicial com Salvamento de Checkpoints
-    # ----------------------------------------------------
+    # salvamento ckpt
     estado_atual = 0
     checkpoints_salvos = {}
     
@@ -23,9 +19,7 @@ def rodar_experimento(intervalo_checkpoint, total_operacoes=100000, operacao_fal
     qtd_checkpoints = 0
 
     for op in range(1, total_operacoes + 1):
-        estado_atual = op  # Atualiza o estado
-
-        # Salva o checkpoint a cada intervalo
+        estado_atual = op  
         if op % intervalo_checkpoint == 0:
             qtd_checkpoints += 1
             arquivo_ckpt = os.path.join(pasta_checkpoints, f"ckpt_{intervalo_checkpoint}_{op}.json")
@@ -36,7 +30,6 @@ def rodar_experimento(intervalo_checkpoint, total_operacoes=100000, operacao_fal
             
             checkpoints_salvos[op] = arquivo_ckpt
 
-        # Simula a ocorrência da falha
         if op == operacao_falha:
             print(f" [!] Processando operação {op} ... FALHA DETECTADA!")
             break
@@ -44,12 +37,9 @@ def rodar_experimento(intervalo_checkpoint, total_operacoes=100000, operacao_fal
     tempo_fim_exec_inicial = time.perf_counter()
     overhead_checkpoints = tempo_fim_exec_inicial - tempo_inicio_checkpoint
 
-    # ----------------------------------------------------
-    # 2. Detecção de Falha e Recuperação (Rollback)
-    # ----------------------------------------------------
     tempo_inicio_recuperacao = time.perf_counter()
 
-    # Identificar o último checkpoint válido antes da falha
+    # vai identificar ckpt
     ultimo_ckpt_op = (operacao_falha // intervalo_checkpoint) * intervalo_checkpoint
     
     if ultimo_ckpt_op in checkpoints_salvos:
@@ -63,18 +53,14 @@ def rodar_experimento(intervalo_checkpoint, total_operacoes=100000, operacao_fal
         estado_restaurado = 0
         print(" [->] Nenhum checkpoint disponível. Reiniciando do zero (0).")
 
-    # ----------------------------------------------------
-    # 3. Continuação da Execução a partir do Checkpoint
-    # ----------------------------------------------------
+    # retoma operacoes
     for op in range(estado_restaurado + 1, total_operacoes + 1):
         estado_atual = op
 
     tempo_fim_recuperacao = time.perf_counter()
     tempo_recuperacao = tempo_fim_recuperacao - tempo_inicio_recuperacao
 
-    # ----------------------------------------------------
-    # 4. Cálculo das Métricas
-    # ----------------------------------------------------
+
     operacoes_perdidas = operacao_falha - estado_restaurado
 
     print("\n--- Resultados ---")
